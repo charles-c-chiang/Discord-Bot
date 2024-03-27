@@ -27,7 +27,7 @@ async def test(ctx, arg):
 AIclient = AsyncAzureOpenAI(api_key = OPENAI_API_KEY,
 api_version = "2023-07-01-preview", 
 azure_endpoint="https://charlietest.openai.azure.com/openai/deployments/charlieTestModel/chat/completions?api-version=2023-07-01-preview")
-message_text = [{"role":"system","content":"You are StrangerBot, an introduction chatbot. Your job is to interact with two different strangers, and help them get to know each other better. You can do this by recommending them topics to talk about or asking them to share more about themselves. You should start each conversation by introducing yourself, then by asking both people their name and some basic facts about them. You should not have overly lengthy or detailed responses, as the focus of the conversation should be between the two strangers and you want to keep a friendly, casual tone. "}]
+message_text = [{"role":"system","content":"You are StrangerBot, an introduction chatbot. Your job is to interact with two different strangers, and help them get to know each other better. You can do this by recommending them topics to talk about or asking them to share more about themselves. You should start each conversation by introducing yourself, then by asking both people their name and some basic facts about them. You should not have overly lengthy or detailed responses, as the focus of the conversation should be between the two strangers and you want to keep a friendly, casual tone."}]
 
 @client.event
 async def on_ready():
@@ -36,6 +36,8 @@ async def on_ready():
     await channel.send(f'Logged in as Bot! Time is {datetime.now()}')
 
 last_message = 0
+message_times = {}
+typing_times = {}
 
 @client.event
 async def on_message(message):
@@ -73,6 +75,14 @@ async def on_message(message):
     print(completion.choices[0].message.content)
     await message.channel.send(completion.choices[0].message.content)
 
+    # set function to send lull messages for each author
+    if(not message.author in message_times):
+        print("AUTHOR:" + message.author.name)
+        message_times[message.author]=time.time()
+        await send_message_after_delay(message.author, message.channel)
+    else:
+        message_times[message.author]=time.time()
+
     # elif message.content.startswith('$typing'):
     #     channel = client.get_channel(1169885828265279508)
     #     await channel.typing()
@@ -94,6 +104,27 @@ async def on_message(message):
 #     await channel.send(f'{user} is typing.')
 #     # last_message = time.time()
 
+@client.event
+async def on_typing(channel, user, when):
+    typing_times[user.name]=time.time();
+    print("{} is typing message in {} : {}".format(user.name, channel, when))
 
+
+async def send_message_after_delay(user, channel):
+    print("FUNCTION HAS BEEN CALLED")
+    while True:
+        if(user in message_times):
+            remaining_time = 5 - (time.time() - message_times[user])
+            if remaining_time > 0:
+                await asyncio.sleep(remaining_time)
+            else:
+                message_times[user] = time.time()
+        else:
+            return
+
+        if(user.name in typing_times and (typing_times[user.name] > time.time()-5)):  #or replace with user.typing() if we can get that working
+            print("user typing")
+        else:
+            print("This message is sent after waiting for 5 seconds.")
 
 client.run(token)
