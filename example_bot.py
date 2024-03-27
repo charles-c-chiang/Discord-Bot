@@ -106,8 +106,7 @@ async def on_message(message):
 
 @client.event
 async def on_typing(channel, user, when):
-    typing_times[user.name]=time.time();
-    print("{} is typing message in {} : {}".format(user.name, channel, when))
+    typing_times[user.name]=time.time()
 
 
 async def send_message_after_delay(user, channel):
@@ -119,12 +118,11 @@ async def send_message_after_delay(user, channel):
                 await asyncio.sleep(remaining_time)
             else:
                 message_times[user] = time.time()
+                if(user.name in typing_times and (typing_times[user.name] > time.time()-5)):
+                    print("user typing")
+                else:
+                    print("This message is sent after waiting for 5 seconds.")
         else:
             return
-
-        if(user.name in typing_times and (typing_times[user.name] > time.time()-5)):  #or replace with user.typing() if we can get that working
-            print("user typing")
-        else:
-            print("This message is sent after waiting for 5 seconds.")
 
 client.run(token)
