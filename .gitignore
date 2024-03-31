@@ -5,3 +5,7 @@
 auth.json
 
 .devcontainer/
+
+#Testing
+testing.py
+testing1.py
