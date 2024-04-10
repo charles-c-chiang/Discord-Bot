@@ -38,6 +38,7 @@ async def on_ready():
 last_message = 0
 message_times = {}
 typing_times = {}
+wait_time = 15
 
 @client.event
 async def on_message(message):
@@ -113,15 +114,16 @@ async def send_message_after_delay(user, channel):
     print("FUNCTION HAS BEEN CALLED")
     while True:
         if(user in message_times):
-            remaining_time = 5 - (time.time() - message_times[user])
+            remaining_time = wait_time - (time.time() - message_times[user])
             if remaining_time > 0:
                 await asyncio.sleep(remaining_time)
             else:
                 message_times[user] = time.time()
-                if(user.name in typing_times and (typing_times[user.name] > time.time()-5)):
+                if(user.name in typing_times and (typing_times[user.name] > time.time()-wait_time)):
                     print("user typing")
+                    message_times[user] = typing_times[user.name]
                 else:
-                    print("This message is sent after waiting for 5 seconds.")
+                    print("This message is sent after waiting for "+str(wait_time)+" seconds.")
         else:
             return
 
