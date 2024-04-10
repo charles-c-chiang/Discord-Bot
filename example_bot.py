@@ -49,21 +49,6 @@ async def get_message(channel):
         # print(completion.choices[0].message.content)
         await channel.send(completion.choices[0].message.content)
 
-#gets message from openai
-async def get_message(channel):
-        # send conversation to aclient, await response
-        completion = await AIclient.chat.completions.create(
-            model="deployment-name",  # e.g. gpt-35-instant
-            messages=message_text
-        )
-        # add to log of conversation
-        message_text.append({"role": "assistant", "content" : completion.choices[0].message.content})
-        # print(message_text)
-
-        # send aclient message to discord
-        # print(completion.choices[0].message.content)
-        await channel.send(completion.choices[0].message.content)
-
 @client.event
 async def on_message(message):
     global message_text
