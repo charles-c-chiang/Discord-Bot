@@ -18,15 +18,9 @@ intents.message_content = True
 
 client = discord.Client(intents=intents)
 
-bot = commands.Bot(command_prefix='/', intents=intents)
-
-@bot.command()
-async def test(ctx, arg):
-    await ctx.send(arg)
-
 AIclient = AsyncAzureOpenAI(api_key = OPENAI_API_KEY,
-api_version = "2023-07-01-preview", 
-azure_endpoint="https://charlietest.openai.azure.com/openai/deployments/charlieTestModel/chat/completions?api-version=2023-07-01-preview")
+api_version = "2024-02-01", 
+azure_endpoint="https://charlietest.openai.azure.com/openai/deployments/charlieTestModel/chat/completions?api-version=2024-02-01")
 message_text = [{"role":"system","content":"You are StrangerBot, an introduction chatbot. Your job is to interact with two different strangers, and help them get to know each other better. You can do this by recommending them topics to talk about or asking them to share more about themselves. You should start each conversation by introducing yourself, then by asking both people their name and some basic facts about them. You should not have overly lengthy or detailed responses, as the focus of the conversation should be between the two strangers and you want to keep a friendly, casual tone."}]
 
 @client.event
@@ -40,6 +34,36 @@ message_times = {}
 typing_times = {}
 wait_time = 15
 
+#gets message from openai
+async def get_message(channel):
+        # send conversation to aclient, await response
+        completion = await AIclient.chat.completions.create(
+            model="deployment-name",  # e.g. gpt-35-instant
+            messages=message_text
+        )
+        # add to log of conversation
+        message_text.append({"role": "assistant", "content" : completion.choices[0].message.content})
+        # print(message_text)
+
+        # send aclient message to discord
+        # print(completion.choices[0].message.content)
+        await channel.send(completion.choices[0].message.content)
+
+#gets message from openai
+async def get_message(channel):
+        # send conversation to aclient, await response
+        completion = await AIclient.chat.completions.create(
+            model="deployment-name",  # e.g. gpt-35-instant
+            messages=message_text
+        )
+        # add to log of conversation
+        message_text.append({"role": "assistant", "content" : completion.choices[0].message.content})
+        # print(message_text)
+
+        # send aclient message to discord
+        # print(completion.choices[0].message.content)
+        await channel.send(completion.choices[0].message.content)
+
 @client.event
 async def on_message(message):
     global message_text
@@ -50,6 +74,12 @@ async def on_message(message):
 
     if message.content.startswith('$hello'):
         await message.channel.send('Hello!')
+        return
+    
+    if message.content.startswith('$message'):
+        # call openai api to send messages
+        await get_message(message.channel)
+        print("messaged")
         return
     
     # Dump conversation to file and quit
@@ -63,22 +93,9 @@ async def on_message(message):
     # create log of conversation for client
     message_text.append({"role": "user", "content": message.content,})
 
-    # send conversation to aclient, await response
-    completion = await AIclient.chat.completions.create(
-        model="deployment-name",  # e.g. gpt-35-instant
-        messages=message_text
-    )
-    # add to log of conversation
-    message_text.append({"role": "assistant", "content" : completion.choices[0].message.content})
-    print(message_text)
-
-    # send aclient message to discord
-    print(completion.choices[0].message.content)
-    await message.channel.send(completion.choices[0].message.content)
-
     # set function to send lull messages for each author
     if(not message.author in message_times):
-        print("AUTHOR:" + message.author.name)
+        print("AUTHOR:" + message.author.display_name)
         message_times[message.author]=time.time()
         await send_message_after_delay(message.author, message.channel)
     else:
@@ -111,6 +128,7 @@ async def on_typing(channel, user, when):
 
 
 async def send_message_after_delay(user, channel):
+    user_message_last = True
     print("FUNCTION HAS BEEN CALLED")
     while True:
         if(user in message_times):
@@ -124,6 +142,10 @@ async def send_message_after_delay(user, channel):
                     message_times[user] = typing_times[user.name]
                 else:
                     print("This message is sent after waiting for "+str(wait_time)+" seconds.")
+                    if user_message_last == True:
+                        await get_message(channel)
+                        user_message_last = False
+                    
         else:
             return
 
