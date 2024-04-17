@@ -6,22 +6,14 @@ import asyncio
 import time
 from datetime import datetime
 from discord.ext import tasks, commands
-from openai import AsyncAzureOpenAI
 
 f = open('auth.json')
 token = json.load(f)['BOT_TOKEN']
-f = open('auth.json')
-OPENAI_API_KEY = json.load(f)['OPENAI_API_KEY']
 
 intents = discord.Intents.default()
 intents.message_content = True
 
 client = discord.Client(intents=intents)
-
-AIclient = AsyncAzureOpenAI(api_key = OPENAI_API_KEY,
-api_version = "2024-02-01", 
-azure_endpoint="https://charlietest.openai.azure.com/openai/deployments/charles-4/chat/completions?api-version=2024-02-01")
-message_text = [{"role":"system","content":"You are StrangerBot, an introduction chatbot. Your job is to interact with two different strangers, and help them get to know each other better. You can do this by recommending them topics to talk about or asking them to share more about themselves. You should start each conversation by introducing yourself, then by asking both people some basic facts about them. The strangers want to be anonymous, so you should refer to them by their username and not ask their name. You should not have overly lengthy or detailed responses, as the focus of the conversation should be between the two strangers and you want to keep a friendly, casual tone."}]
 
 @client.event
 async def on_ready():
@@ -32,11 +24,11 @@ async def on_ready():
 last_message = 0
 wait_time = 16.28
 message_time = time.time()
-typing_time = time.time()
-bot_message_last = True
+typing_times = time.time()
+bot_message_last = False
 activity_points = {}
 
-#gets message from openai
+#gets message from openai *CHANGE TO GET BACKGROUND FROM FORM*
 async def get_message(channel):
         # send conversation to aclient, await response
         completion = await AIclient.chat.completions.create(
@@ -53,9 +45,6 @@ async def get_message(channel):
 
 @client.event
 async def on_message(message):
-    global bot_message_last
-    global message_time
-    global typing_time
     global message_text
     global last_message
 
@@ -90,10 +79,13 @@ async def on_message(message):
         print(str(message.author.name) + ": " + str(activity_points[message.author]))
 
     # set function to send lull messages for each author
-    message_time=time.time()
-    if(bot_message_last):
-        bot_message_last = False
-        await send_message_after_delay(message.channel)
+    if(not message.author in message_times):
+        message_times[message.author]=time.time()
+        user_message_last = True
+        await send_message_after_delay(message.author, message.channel)
+    else:
+        user_message_last = True
+        message_times[message.author]=time.time()
 
     # elif message.content.startswith('$typing'):
     #     channel = client.get_channel(1169885828265279508)
@@ -118,27 +110,30 @@ async def on_message(message):
 
 @client.event
 async def on_typing(channel, user, when):
-    global typing_time
-    typing_time=time.time()
+    typing_times[user.name]=time.time()
 
 
-async def send_message_after_delay(channel):
-    global bot_message_last
-    global message_time
-    global typing_time
+async def send_message_after_delay(user, channel):
+    user_message_last = True
     while True:
-        remaining_time = wait_time - (time.time() - message_time)
-        if remaining_time > 0:
-            await asyncio.sleep(remaining_time)
-        else:
-            message_time = time.time()
-            if(typing_time > time.time()-wait_time):
-                print("user typing")
-                message_time = typing_time
+        if(user in message_times):
+            remaining_time = wait_time - (time.time() - message_times[user])
+            if remaining_time > 0:
+                await asyncio.sleep(remaining_time)
             else:
-                print("This message is sent after waiting for "+str(wait_time)+" seconds.")
-                bot_message_last = True
-                await get_message(channel)      
-                return;
+                if(user.name in typing_times and (typing_times[user.name] > time.time()-wait_time)):
+                    print("user typing")
+                    message_times[user] = typing_times[user.name]
+                    user_message_last = True
+                else:
+                    print("This message is sent after waiting for "+str(wait_time)+" seconds.")
+                    message_times[user] = time.time()
+                    bot_message_last = True
+                    # if user_message_last == True:
+                    #     user_message_last = False
+                    await get_message(channel)
+                    
+        else:
+            return
 
 client.run(token)

@@ -5,10 +5,22 @@
     },
     {
         "role": "user",
-        "content": "katarina_144: Hi!"
+        "content": "katarina_144: Hello!"
+    },
+    {
+        "role": "assistant",
+        "content": "Hi there! I'm StrangerBot, and I'm here to help you get to know another stranger today. \ud83d\ude0a Before we get started, could you tell me your name and a few basic facts about yourself?"
+    },
+    {
+        "role": "assistant",
+        "content": "It seems like I already know your name, Katarina! Could you share some of your hobbies or interests with us?"
     },
     {
         "role": "user",
-        "content": "katarina_144: !quit"
+        "content": "katarina_144: I like to sketch and generate AI Images!"
+    },
+    {
+        "role": "assistant",
+        "content": "That's really cool, Katarina! Your interests in sketching and generating AI images sound fascinating. Let's wait for another person to join so we can share and expand on that. \ud83d\ude0a"
     }
 ]
